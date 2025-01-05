@@ -131,7 +131,7 @@ select res = sum(col1 * col2 ) from #Q1_res
 
 --- Q2 
 -- the idea is to void all the mul() pairs between a don't and do
--- same steps as Q1, plus a step to find the start of don't() and the nearst do.
+-- same steps as Q1, plus a step to find the start of "don't()" and the nearst "do()".
 
 
 
