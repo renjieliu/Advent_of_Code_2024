@@ -1,7 +1,5 @@
--- Total running time on Rpi 5: 00:01:19.585
+-- Total running time on Rpi 5: 00:03:25.825
 drop table if exists #input
-
-
 
 
 select col = 'select()} <*mul(843,597)!~mul(717,524)&?}''mul(928,721)>mul(194,52)''why()]-*select()what(898,458):#*mul(31,582)mul(209,470)''-mul(834,167)>}mul(188,914)where(344,689)select(90,321)where()-when()[{]mul(133,940)#-mul(732,657)why()$when()-how()?!>who(208,16)mul(332,604)?do()^:how():: mul(613,614)@);mul(458,93)@# @$~+#select(234,120)mul(184,924)~ why()^$'' #{mul(882,83)~<&mul(878,13)select()who()?mul(947,828)select()select())?>^where()how()''*mul(837,672)-select():from())[^$^mul(325,979)}what()[select()mul(226,766)?where()''what():mul(964,728)/)~$~how()&]%]mul(420,781)$how()/]! ~]?mul(624,205)-how()<(*where()where()mul(33,801)mul(614,925)/mul(660,91)}/mul(205,753)$- }mul(136,460)where(671,425)from()@mul(316,262)*?''%(mul(290,988)why()<+[%from()/@>mul(694,616)what()from()what()#$where()mul(666,785)mul(668,125)!%/&*(~*mul(728,226)why() %/{''>how(615,392):mul(478,823)>do()mul(166,999)%~!!mul(368,199)how()!who()/<-[mul(43,454)how(673,426))do()when()$from()why()^mul(228,279)how():select()mul(413,456)where(){$-[where()who()mul(769,535)mul(290,859)!#do();who()&+%mul(734,882)mul(346,904)/mul(319,21)<mul(548,912)mul(776,306)/''when() -^-!/mul(805,224)who(),~{when()[mul(641,941)+*why()mul(880,39)!mul(367,322)+{;why())<where():+ do():who()who(){mul(297,155){>/@!}[(: mul(582,935);mul(924,453)where():]*]mul(962,327):?<where(583,199)/[{)how()don''t()where()^mul(493,697)''%+#[!mul(64,397)*^;)how()}!mul(133,628):-&@%?&;when()(mul(245,450){who()*mul(8,731)!([&mul(862,150)who()why()who()''mul(129,583)@:why()[ mul(557,879)why()%,@mul(969,31)^*mul(243,857)#]''?^~mul(418,611)@who()[-mul(381,404)#? who()}}how(),$mul(992,433)#[~from()%mul(823,119)who();when()from()mul(436,64)when()<{when()how(141,705)$<{select(673,665)@mul(776,698)mul(859,821)where(733,36)}>$who()who()<~don''t();mul(531,594) ^>&mul(246,430)select()how() %]/mul(80)'')][,+-select()-mul(18,784){mul(360,42)) ~who()@+mul(113,212)/*(/mul(765,643)!mul(853,147)[/ mul(396,209)+[?what()mul(479,669))why();;mul(542,614);#}$select()mul(398,910)mul(687,370)mul(59,590)''&what(656,317)(what()*/+()mul(382,325)#:]when()%<,,where()<mul(124,796)what()$/,<@)mul(227,847);mul(588,764)<@select(),who()where()mul(496,225)where()how()<!mul(998,360)+-^){?where()<mul(584,368)why()why()why()>mul(607,933)[what()*what()mul(301,569)where()%{when();)[*%mul(223,95)[select()-why()where()from()?:[<mul(927,19)] *:^''mul(846,824)''~(&what(206,282)[,mul(791]? -&!mul(482,335)mul(835,793);/@mul(115,602)what()!:what()!&]where()>mul(718,286):}why(),mul(2,974) :/where()?! }what()when()mul(379,171)+]select()][{mul(530,485)>*-why()},-how()!who()mul(643,906)}who()mul(906,628)<;{mul(875,497)%;!#^{!how()(mul(29,450)*$how()+from()what():mul(298,289)-how()*mul(771,685)who(44,541)!?when()who()#{mul(87,962)]#mul(479,616)
@@ -96,6 +94,7 @@ and not exists
 
 -- select * from #segment_start_end
 
+create index idx on #segment_start_end(rn, pos)
 
 -- find everything between the ( and ), assign each () a global pos
 drop table if exists #number_group
@@ -109,7 +108,7 @@ global_pos = CONCAT_WS('-', cast(A.rn as varchar), cast(B.seg_start as varchar),
 , B.seg_end 
 into #number_group
 from #segment_start_end A inner join #segment_start_end B 
-on A.rn = B.rn and A.pos between B.seg_start + 1  and B.seg_end - 1  -- +1 and -1 is to exlcude the (  and ) itself 
+on A.rn = B.rn and A.pos between B.seg_start + 1 and B.seg_end - 1  -- +1 and -1 is to exlcude the (  and ) itself 
 -- order by global_pos, A.pos 
 
 
@@ -206,8 +205,8 @@ and not exists
     )
 where dn.dont_start = 1 
 
-select * from #filter_range
-order by 1
+-- select * from #filter_range
+-- order by 1
 
 
 -- select * from #filter_range
