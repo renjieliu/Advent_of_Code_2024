@@ -100,4 +100,10 @@ from (
 ) rpt 
 
 
- 
+--Q2
+-- cross join to get all the possible sorting order, and check the ones that are good.
+
+
+
+
+
