@@ -1,8 +1,13 @@
+-- Running time : 00:21:23.577 
+-- TODO: To optimize the logic - reference the ones from github
+
 -- Idea: 
 -- To break all the priority list into A and B 
 -- To break the update list
 -- For each number in the update list, can we find any conflict in B column from the priority list?
 -- If no conflict find for the entire update list, then it's a good list
+
+
 
 drop table if exists #input_priority
 
@@ -161,24 +166,34 @@ drop table if exists #node_level
     on prev.B = curr.A and prev.grp_id = curr.grp_ID
 )   
 select 
-* 
--- count(*) 
-into #node_level 
-from cte 
-OPTION(maxrecursion 0 )
-
-
-
-drop table if exists #sorting
-
-select 
 grp_id
 , node = og
 , lvl_number = max(lvl) 
 , sorting_number = ROW_NUMBER()over (order by max(lvl) desc) -- this is the sorting for the node 
 into #sorting
-from #node_level
+from cte
 group by grp_id, og
+
+
+-- select 
+-- * 
+-- -- count(*) 
+-- into #node_level 
+-- from cte 
+-- OPTION(maxrecursion 0 )
+
+
+
+-- drop table if exists #sorting
+
+-- select 
+-- grp_id
+-- , node = og
+-- , lvl_number = max(lvl) 
+-- , sorting_number = ROW_NUMBER()over (order by max(lvl) desc) -- this is the sorting for the node 
+-- into #sorting
+-- from #node_level
+-- group by grp_id, og
 
 
 
@@ -202,10 +217,111 @@ left outer join #sorting s on b.curr_number = s.node and b.grp_ID = s.grp_ID
 
 
 -- select * from #Q2_rpt
- 
+-- 4719 
 select res = sum(curr_number) from #Q2_rpt 
 where correct_sort = (group_cnt / 2) + 1
 
 
 
 
+
+
+-- ; with cte 
+-- as (
+--     SELECT 
+--         grp_ID , 
+--         0 AS correction_step, 
+--         pos, 
+--         curr_number
+--     FROM #Q2_base
+--     UNION ALL
+--     SELECT 
+--         tmp.grp_ID, 
+--         tmp.correction_step + 1, 
+--         tmp.pos, 
+--         CASE 
+--             WHEN tmp.pos = to_swap.position_a THEN to_swap.page_b
+--             WHEN tmp.pos = to_swap.position_b THEN to_swap.page_a
+--             ELSE tmp.curr_number 
+--         END
+--     FROM cte tmp
+--     inner JOIN (
+--         SELECT 
+--             u1.grp_ID, 
+--             position_a = u1.pos , 
+--             u1.curr_number AS page_a, 
+--             position_b = u2.pos, 
+--             u2.curr_number AS page_b,
+--             swap_priority = ROW_NUMBER() OVER (PARTITION BY u1.grp_id ORDER BY u1.pos, u2.pos) 
+--         FROM cte u1
+--         inner JOIN cte u2 ON u1.grp_ID = u2.grp_ID
+--         inner JOIN #pr r ON r.a = u1.curr_number AND r.b = u2.curr_number
+--         WHERE u1.pos < u2.pos
+--     ) to_swap ON tmp.grp_ID = to_swap.grp_ID AND to_swap.swap_priority = 1
+
+-- )
+ 
+
+/* 
+
+
+
+
+
+
+
+Other solution https://github.com/neumannt/aoc24/blob/master/day05.sql#L49  --- 
+
+lines(y,line) as (
+   select 0, substr(i,1,position(E'\n' in i)-1), substr(i,position(E'\n' in i)+1)
+   from aoc5_input
+   union all
+   select y+1,substr(r,1,position(E'\n' in r)-1), substr(r,position(E'\n' in r)+1)
+   from lines l(y,l,r) where position(E'\n' in r)>0
+),
+rules(b, a) as (
+   select substr(line,1,position('|' in line)-1)::integer as a, substr(line,position('|' in line)+1)::integer as b
+   from lines where line like '%|%'
+),
+updates(y,x,v) as (
+   select y, 0 as x, substr(line,1,position(',' in line)-1)::integer as v, substr(line,position(',' in line)+1) as r
+   from lines where line like '%,%'
+   union all
+   select y, x+1, case when r like '%,%' then substr(r,1,position(',' in r)-1) else r end::integer, case when r like '%,%' then substr(r,position(',' in r)+1) else '' end
+   from updates where r<>''
+) ,
+violations(y) as (
+   select distinct u1.y
+   from updates u1, updates u2, rules r
+   where u1.y=u2.y and u1.x<u2.x and r.b=u2.v and r.a=u1.v
+),
+correct(y,x,v) as (select * from updates where y not in (select y from violations)),
+part1(v) as (
+   select sum(v)
+   from correct c natural join (select y, percentile_disc(0.5) WITHIN GROUP (ORDER BY x) as x from correct group by y) s
+),
+rawcorrected(y,step,x,v) as (
+   select y,0,x,v from updates where y in (select y from violations)
+   union all    
+   (with tmp as (select * from rawcorrected),
+    rawtoswap as (select o1.y as y, o1.x as x1, o1.v as v1
+                        , o2.x as x2, o2.v as v2, row_number() over (partition by o1.y order by o1.x, o2.x) as r
+                    from tmp o1, tmp o2, rules r 
+                    where o1.y=o2.y 
+                        and o1.x<o2.x 
+                        and r.b=o1.v 
+                        and r.a=o2.v
+                ),
+    toswap as (select y, x1, v1, x2, v2 from rawtoswap where r=1)
+    select y, step+1, x, case when x=x1 then v2 when x=x2 then v1 else v end
+    from tmp natural join toswap
+    
+    )
+),
+corrected(y,x,v) as (select y,x,v from rawcorrected c1 where step=(select max(step) from rawcorrected c2 where c2.y=c1.y)),
+part2(v) as (
+   select sum(v)
+   from corrected c natural join (select y, percentile_disc(0.5) WITHIN GROUP (ORDER BY x) as x from corrected group by y) s
+)
+select (select v from part1) as part1,
+       (select v from part2) as part2 */
