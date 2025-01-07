@@ -87,11 +87,13 @@ where case  when curr.dir = 'U' then up_r
        end is not null 
 
 ) 
-
+-- adding the final point on the map before exiting 
 select * from cte
 option (maxrecursion 0 )
 
--- adding the final point on the map before exiting 
+
+
+
 
 -- get all the walked point on the map
  
