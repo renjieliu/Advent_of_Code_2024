@@ -46,7 +46,9 @@ left outer join #brk rit on og.c <= rit.c and rit.r = og.r and rit.ch = '#'
 
 -- select * from #nxt 
 
-alter table #brk drop COLUMN rem 
+drop table if exists #walk
+
+-- alter table #brk drop COLUMN rem 
 
 ; with cte as 
 (
@@ -88,10 +90,19 @@ where case  when curr.dir = 'U' then up_r
 
 ) 
 -- adding the final point on the map before exiting 
-select * from cte
+select * into #walk
+ from cte
 option (maxrecursion 0 )
 
 
+
+select
+id 
+, curr_r = r
+
+ from #walk 
+
+-- adding current loc, next loc based on the path 
 
 
 
