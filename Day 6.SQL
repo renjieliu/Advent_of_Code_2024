@@ -62,12 +62,12 @@ id + 1
        end 
 ,  r =  case when curr.dir = 'U' then nxt.up_r + 1  
              when curr.dir = 'D' then nxt.down_r -1  
-             when curr.dir = 'L' then nxt.left_c + 1  
-             when curr.dir = 'R' then nxt.right_c - 1  
+             when curr.dir = 'L' then curr.r  
+             when curr.dir = 'R' then curr.r  
         end
 
-,  c = case when curr.dir = 'U' then nxt.up_r + 1 
-        when curr.dir = 'D' then nxt.down_r -1 
+,  c = case when curr.dir = 'U' then curr.c 
+        when curr.dir = 'D' then curr.c 
         when curr.dir = 'L' then nxt.left_c + 1 
         when curr.dir = 'R' then nxt.right_c - 1 
         end
@@ -77,7 +77,6 @@ id + 1
             when curr.dir = 'L' then 'U'
             when curr.dir = 'R' then 'D'
         end
-
 
 from cte curr inner join #nxt nxt 
 on curr.r= nxt.r and curr.c = nxt.c
@@ -92,4 +91,9 @@ where case  when curr.dir = 'U' then up_r
 select * from cte
 option (maxrecursion 0 )
 
+-- adding the final point on the map before exiting 
+
+-- get all the walked point on the map
+ 
+-- count distinct points
 
