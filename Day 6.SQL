@@ -140,6 +140,16 @@ from
 
 -- Q2 
 
+-- Put obstacles to all the possible location on the map 
+-- to check if can reach a dummy obstacle location (-1, -1), which is placed outside the map
+-- simulate the walk, if meet obstacle, turn right 
+-- initial is fcing up, (r_move,c_move) = (-1, 0)
+-- turn right --> facing right --> (0, 1) 
+-- turn right --> facing down --> (1, 0)
+-- turn right --> facing left --> (0, -1)
+-- it's always (prev_c_move, prev_r_move * -1 )
+-- if it cannot reach after 1000000 iterations, meaning it stucked in the loop
+
 
 
 
