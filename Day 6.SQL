@@ -138,14 +138,5 @@ from
     (map.r between cn.curr_r and cn.next_r or map.r between cn.next_r and curr_r)
 ) t
 
--- adding current loc, next loc based on the path 
-
-
-
-
-
-
--- get all the walked point on the map
- 
--- count distinct points
+-- Q2 
 
