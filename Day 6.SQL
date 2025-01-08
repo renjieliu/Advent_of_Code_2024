@@ -150,147 +150,69 @@ from
 
 
 
-with recursive map_ as (
-    select array_agg(replace(input, '^', '.')) as map_str, -- treat the starting point as regular one
-        max(length(input)) as max_j, s-- get the max(c)
-        max(row_num) as max_i, -- get the max(r)
-        max(case when input like '%^%' then row_num end) as start_i, -- starting r  
-        max(position('^' in input)) as start_j -- starting j 
-    from day06
+-- with recursive map_ as (
+--     select array_agg(replace(input, '^', '.')) as map_str, -- treat the starting point as regular one
+--         max(length(input)) as max_j, s-- get the max(c)
+--         max(row_num) as max_i, -- get the max(r)
+--         max(case when input like '%^%' then row_num end) as start_i, -- starting r  
+--         max(position('^' in input)) as start_j -- starting j 
+--     from day06
 	
 
-)
+-- )
 
-, obstacles as ( -- this is to obstacles on all the locations
-    select obi, obj
-    from map_ 
-		cross join generate_series(1, max_i) as oi  -- all the possible r 
-		cross join generate_series(1, max_j) as oj -- all the possible c 
-    where oi != start_i or obj != start_j -- all the possible loc for obstacles
-    union all
-    select -1, -1 
+-- , obstacles as ( -- this is to obstacles on all the locations
+--     select obi, obj
+--     from map_ 
+-- 		cross join generate_series(1, max_i) as oi  -- all the possible r 
+-- 		cross join generate_series(1, max_j) as oj -- all the possible c 
+--     where oi != start_i or obj != start_j -- all the possible loc for obstacles
+--     union all
+--     select -1, -1 
 
 
-) 
-, steps as ( 
-    select 0 as t -- moving steps
-	, obr -- obstacle r 
-	, obc -- obstacle c
+-- ) 
+-- , steps as ( 
+--     select 0 as t -- moving steps
+-- 	, obr -- obstacle r 
+-- 	, obc -- obstacle c
 	 
-	, start_r as r
-	, start_c as c
+-- 	, start_r as r
+-- 	, start_c as c
 	
-	, -1 as dr  -- direction r 
-	, 0 as dc -- direction c 
-    from map_, obstacles
+-- 	, -1 as dr  -- direction r 
+-- 	, 0 as dc -- direction c 
+--     from map_, obstacles
     
 	
-	union all
-    select 
-	t + 1
+-- 	union all
+--     select 
+-- 	t + 1
 	
-	, obr --  obstacle r 
-	, obc --   obstacle c
-	,
-        case when next_tile = '.' then next_r else start_r end,
-        case when next_tile = '.' then next_c else start_c end,
+-- 	, obr --  obstacle r 
+-- 	, obc --   obstacle c
+-- 	,
+--         case when next_tile = '.' then next_r else start_r end,
+--         case when next_tile = '.' then next_c else start_c end,
         
-		case when next_tile = '.' then dr else dc end, -- dr, dc 
-        case when next_tile = '.' then dc else -dr end -- dc, -dr 
+-- 		case when next_tile = '.' then dr else dc end, -- dr, dc 
+--         case when next_tile = '.' then dc else -dr end -- dc, -dr 
     
-	from steps, map_, lateral (
-        select 
-			i + di as next_i
-			, j + dj as next_j
-			, case
-				when  i + di not between 1 and max_i 
-					or  j + dj not between 1 and max_j  then null -- moving out of the boundary
-				when i + di = oi and j + dj = oj then 'O' -- step on the obstacle 
-				else substring(map_.map_str[i + di], j + dj, 1)
-			   end as next_tile
-	  ) as new_pos
-    where t < max_i * max_j and new_pos.next_tile is not null
-)
+-- 	from steps, map_, lateral (
+--         select 
+-- 			i + di as next_i
+-- 			, j + dj as next_j
+-- 			, case
+-- 				when  i + di not between 1 and max_i 
+-- 					or  j + dj not between 1 and max_j  then null -- moving out of the boundary
+-- 				when i + di = oi and j + dj = oj then 'O' -- step on the obstacle 
+-- 				else substring(map_.map_str[i + di], j + dj, 1)
+-- 			   end as next_tile
+-- 	  ) as new_pos
+--     where t < max_i * max_j and new_pos.next_tile is not null
+-- )
 
 
-
-, part1 as (
-    select count(distinct (i,j))
-    from steps
-    where (oi, oj) = (-1, -1)
-), part2 as (
-    select count(distinct (oi, oj))
-    from steps, map_
-    where t = max_i * max_j -- in the end, how many o found? 
-)
-select * from part1, part2;
-
-
-
-
-
-
-
-
-
-
-
-
-
-create table day06 as 
-select   1 row_num ,  '....#.....' input union all
-select   2 , '.........#' union all
-select   3 , '..........' union all
-select   4 , '..#.......' union all
-select   5 , '.......#..' union all
-select   6 , '..........' union all
-select   7 , '.#..^.....' union all
-select   8 , '........#.' union all
-select   9 , '#.........' union all
-select   10 , '......#...' 
-
-; 
-
- with recursive map as (
-    select array_agg(replace(input, '^', '.')) as map,
-        max(length(input)) as max_j,
-        max(row_num) as max_i,
-        max(case when input like '%^%' then row_num end) as start_i,
-        max(position('^' in input)) as start_j
-    from day06
-)
-, obstacles as (
-    select oi, oj
-    from map
-    cross join generate_series(1, max_i) as oi
-    cross join generate_series(1, max_j) as oj
-    where oi != start_i or oj != start_j
-    union all
-    select -1, -1
-)
--- select * from obstacles 
-,
-steps as (
-    select 0 as t, oi, oj, start_i as i, start_j as j, -1 as di, 0 as dj
-    from map, obstacles
-    union all
-    select t + 1, oi, oj,
-        case when next_tile = '.' then next_i else i end,
-        case when next_tile = '.' then next_j else j end,
-        case when next_tile = '.' then di else dj end,
-        case when next_tile = '.' then dj else -di end
-    from steps, map, lateral (
-        select i + di as next_i, j + dj as next_j, case
-            when not (i + di between 1 and max_i)
-                or not (j + dj between 1 and max_j)  then null
-            when i + di = oi and j + dj = oj then 'O'
-            else substring(map.map[i + di], j + dj, 1)
-        end as next_tile
-    ) as new_pos
-    where t < max_i * max_j and new_pos.next_tile is not null
-)
-
-select * from steps 
 
 -- , part1 as (
 --     select count(distinct (i,j))
@@ -298,7 +220,85 @@ select * from steps
 --     where (oi, oj) = (-1, -1)
 -- ), part2 as (
 --     select count(distinct (oi, oj))
---     from steps, map
---     where t = max_i * max_j
+--     from steps, map_
+--     where t = max_i * max_j -- in the end, how many o found? 
 -- )
 -- select * from part1, part2;
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- create table day06 as 
+-- select   1 row_num ,  '....#.....' input union all
+-- select   2 , '.........#' union all
+-- select   3 , '..........' union all
+-- select   4 , '..#.......' union all
+-- select   5 , '.......#..' union all
+-- select   6 , '..........' union all
+-- select   7 , '.#..^.....' union all
+-- select   8 , '........#.' union all
+-- select   9 , '#.........' union all
+-- select   10 , '......#...' 
+
+-- ; 
+
+--  with recursive map as (
+--     select array_agg(replace(input, '^', '.')) as map,
+--         max(length(input)) as max_j,
+--         max(row_num) as max_i,
+--         max(case when input like '%^%' then row_num end) as start_i,
+--         max(position('^' in input)) as start_j
+--     from day06
+-- )
+-- , obstacles as (
+--     select oi, oj
+--     from map
+--     cross join generate_series(1, max_i) as oi
+--     cross join generate_series(1, max_j) as oj
+--     where oi != start_i or oj != start_j
+--     union all
+--     select -1, -1
+-- )
+-- -- select * from obstacles 
+-- ,
+-- steps as (
+--     select 0 as t, oi, oj, start_i as i, start_j as j, -1 as di, 0 as dj
+--     from map, obstacles
+--     union all
+--     select t + 1, oi, oj,
+--         case when next_tile = '.' then next_i else i end,
+--         case when next_tile = '.' then next_j else j end,
+--         case when next_tile = '.' then di else dj end,
+--         case when next_tile = '.' then dj else -di end
+--     from steps, map, lateral (
+--         select i + di as next_i, j + dj as next_j, case
+--             when not (i + di between 1 and max_i)
+--                 or not (j + dj between 1 and max_j)  then null
+--             when i + di = oi and j + dj = oj then 'O'
+--             else substring(map.map[i + di], j + dj, 1)
+--         end as next_tile
+--     ) as new_pos
+--     where t < max_i * max_j and new_pos.next_tile is not null
+-- )
+
+-- select * from steps 
+
+-- -- , part1 as (
+-- --     select count(distinct (i,j))
+-- --     from steps
+-- --     where (oi, oj) = (-1, -1)
+-- -- ), part2 as (
+-- --     select count(distinct (oi, oj))
+-- --     from steps, map
+-- --     where t = max_i * max_j
+-- -- )
+-- -- select * from part1, part2;
