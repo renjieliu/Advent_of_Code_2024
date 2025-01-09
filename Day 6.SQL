@@ -222,17 +222,17 @@ from #brk where ch = '^'
     , nxt_c = case when nxt.newblock = '.' then next_c
                    else curr_c
               end
-    , move_r = iif(nxt.newblock = '.' , move_r, move_c)
-    , move_c = iif(nxt.newblock = '.' , move_c, -move_r)
+    , move_r = case when nxt.newblock = '.' then move_r when nxt.newblock = '#' then move_c end
+    , move_c =  case when nxt.newblock = '.' then move_c when nxt.newblock = '#' then -move_r end
     from moving inner join #initial ini on 1=1 -- dummy cross join
     cross apply (select next_r = curr_r + move_r
                         , next_c = curr_c + move_c
                 ) nxt_r_c
     cross apply 
                 (select 
-                    newblock = case when next_r not between 1 and ini.max_r 
+                    newblock = case when not (next_r between 1 and ini.max_r)
                                           or
-                                         next_c not between 1 and ini.max_c
+                                         not (next_c  between 1 and ini.max_c)
                                 then NULL
                                 when next_r = obstacle_r 
                                     and 
@@ -244,7 +244,7 @@ from #brk where ch = '^'
                 ) nxt
    where n < ini.max_r * ini.max_c and nxt.newblock is not null 
 )
-select distinct curr_r, curr_c from moving, #initial
+select distinct curr_r, curr_c from moving -- , #initial
 where obstacle_c = -1 and obstacle_r = -1 
 option (maxrecursion 0)
 
