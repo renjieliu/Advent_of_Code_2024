@@ -200,7 +200,7 @@ from #brk where ch = '^'
 
 ; with moving AS
 (
-    select 
+    select
     n = 1
     , obstacle_r = o.r 
     , obstacle_c = o.c
