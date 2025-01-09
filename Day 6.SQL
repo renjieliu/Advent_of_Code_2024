@@ -144,50 +144,61 @@ from
 -- Put obstacles to all the possible location on the map 
 -- to check if can reach a dummy obstacle location (-1, -1), which is placed outside the map
 -- simulate the walk, if meet obstacle, turn right 
--- initial is fcing up, (r_move,c_move) = (-1, 0)
--- turn right --> facing right --> (0, 1) 
--- turn right --> facing down --> (1, 0)
--- turn right --> facing left --> (0, -1)
--- it's always (prev_c_move, prev_r_move * -1 )
--- if it cannot reach after 1000000 iterations, meaning it stucked in the loop
+    -- initial is fcing up, (r_move,c_move) = (-1, 0)
+    -- turn right --> facing right --> (0, 1) 
+    -- turn right --> facing down --> (1, 0)
+    -- turn right --> facing left --> (0, -1)
+    -- it's always (prev_c_move, prev_r_move * -1 )
+-- if it cannot reac outside after 1000000 iterations, meaning it stucked in the loop
 
 
 drop table if exists #obstacle_loc
 
-; with rc AS 
-(select r = max(r),  c= max(c) from #brk )
-, _r as 
- (select r = 1 
+-- ; with rc AS 
+-- (select r = max(r),  c= max(c) from #brk )
+-- , _r as 
+--  (select r = 1 
+--   union all 
+--   select r + 1 from _r 
+--   where r < (select r from rc)
+-- )
+-- ,_c as 
+-- (
+--     select c = 1
+--     union all 
+--     select c + 1 from _c 
+--     where c < (select c from rc)
+-- )
+-- select * 
+ -- -- into #obstacle_loc 
+-- from  _r, _c
+-- union all 
+-- select -1, -1
+-- option (maxrecursion 0)
+
+
+select distinct r, c 
+into #obstacle_loc 
+from #brk
+where ch != '^'
 union all 
-  select r+ 1 from _r 
-  where r < (select r from rc)
-)
-,_c as 
-(
-    select c = 1
-    union all 
-    select c + 1 from _c 
-    where c < (select c from rc)
-)
-select * into #obstacle_loc 
-from  _r, _c
-union all 
-select -1, -1
-option (maxrecursion 0)
+select -1, -1 
 
 -- select * from #obstacle_loc
 
+drop table if exists #initial
 
-; with initial AS
-(
-    select 
-    start_r = r
-    , start_c = c
-    , max_r = (select r = max(r)  from #brk )
-    , max_c =  (select c= max(c) from #brk )
-    from #brk where ch = '^'
-)
-, moving AS
+select 
+start_r = r
+, start_c = c
+, max_r = (select r = max(r) from #brk )
+, max_c = (select c= max(c) from #brk )
+into #initial
+from #brk where ch = '^'
+
+-- select * from #initial
+
+; with moving AS
 (
     select 
     n = 1
@@ -195,22 +206,48 @@ option (maxrecursion 0)
     , obstacle_c = o.c
     , curr_r = start_r
     , curr_c = start_c
-    , direction_r = -1
-    , direction_c = 0
-    from #obstacle_loc o,  initial
+    , move_r = -1
+    , move_c = 0
+    from #obstacle_loc o,  #initial
+    
     union all 
+    
     select 
     n + 1 
-    , obstacle_r
+    , obstacle_r 
     , obstacle_c
-    , 
-    from moving, initial
+    , nxt_r = case when nxt.newblock = '.' then next_r
+                   else curr_r
+              end 
+    , nxt_c = case when nxt.newblock = '.' then next_c
+                   else curr_c
+              end
+    , move_r = iif(nxt.newblock = '.' , move_r, move_c)
+    , move_c = iif(nxt.newblock = '.' , move_c, -move_r)
+    from moving inner join #initial ini on 1=1 -- dummy cross join
+    cross apply (select next_r = curr_r + move_r
+                        , next_c = curr_c + move_c
+                ) nxt_r_c
     cross apply 
-        (select )
-    
-
-
+                (select 
+                    newblock = case when next_r not between 1 and ini.max_r 
+                                          or
+                                         next_c not between 1 and ini.max_c
+                                then NULL
+                                when next_r = obstacle_r 
+                                    and 
+                                    next_c = obstacle_c 
+                                then '#'
+                                else 
+                                (select ch from #brk where r = next_r and c = next_c)
+                                end
+                ) nxt
+   where n < ini.max_r * ini.max_c and nxt.newblock is not null 
 )
+select distinct curr_r, curr_c from moving, #initial
+where obstacle_c = -1 and obstacle_r = -1 
+option (maxrecursion 0)
+
 
 --     , lateral (
 --         select i + di as next_i
