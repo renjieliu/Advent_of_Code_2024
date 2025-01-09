@@ -1,4 +1,6 @@
--- Total running time on Rpi 5: 00:00:56.853
+-- First part is done and passed the test.
+-- TODO: second part - not sure why it does not work with the T-SQL version. 
+-- Need to compare again with the pgsql script.
 
 
 drop table if exists #input
