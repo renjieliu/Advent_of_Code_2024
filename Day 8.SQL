@@ -58,23 +58,20 @@ a.ch
 , ac = a.c 
 , br = b.r
 , bc = b.c
-, loc_1_r = a.r - dist.dist_r
-, loc_1_c = case when a.c <= b.c then a.c - dist.dist_c
-                 else a.c + dist.dist_c 
-            end 
+, loc_1_r = a.r + dist.dist_r
+, loc_1_c = a.c + dist.dist_c  
 
-, loc_2_r = b.r + dist.dist_r 
-, loc_2_c = case when b.c <= a.c then b.c - dist.dist_c
-                 else b.c + dist.dist_c
-            end
+, loc_2_r =  b.r - dist.dist_r 
+, loc_2_c =  b.c - dist.dist_c
+
 into #calc_location
 from #base a inner join #base b
 on ascii(a.ch) = ascii(b.ch) -- SQL server is case insensitive
 and a.ch != '.' 
 and a.pos < b.pos -- to avoid double finding
 cross apply 
-    (select dist_r =  abs(a.r - b.r)
-           , dist_c = abs(a.c-b.c)
+    (select dist_r =  a.r-b.r 
+           , dist_c = a.c-b.c 
          ) dist
 
 
@@ -156,15 +153,11 @@ n = 1
 
 , dist.dist_r 
 , dist.dist_c
-, loc_1_r = a.r - dist.dist_r
-, loc_1_c = case when a.c <= b.c then a.c - dist.dist_c
-                 else a.c + dist.dist_c 
-            end 
+, loc_1_r = a.r + dist.dist_r
+, loc_1_c = a.c + dist.dist_c
 
-, loc_2_r = b.r + dist.dist_r 
-, loc_2_c = case when b.c <= a.c then b.c - dist.dist_c
-                 else b.c + dist.dist_c
-            end
+, loc_2_r = b.r - dist.dist_r 
+, loc_2_c = b.c - dist.dist_c
 
 from #base a 
 inner join #base b
@@ -172,7 +165,7 @@ on ascii(a.ch) = ascii(b.ch) -- SQL server is case insensitive
 and a.ch != '.' 
 and a.pos < b.pos -- to avoid double finding
 cross apply 
-    (select dist_r = abs(a.r - b.r) , dist_c = abs(a.c-b.c)  ) dist
+    (select dist_r = a.r - b.r  , dist_c = a.c-b.c   ) dist
 
 union all 
 
@@ -189,21 +182,17 @@ n + 1
 , dist_r 
 , dist_c
 
-, loc_1_r = ar - currN * dist_r
-, loc_1_c = case when ac <= bc then ac - currN * dist_c
-                 else ac + currN*dist_c 
-            end 
+, loc_1_r = ar + currN * dist_r
+, loc_1_c = ac + currN * dist_c
 
-, loc_2_r = br + currN* dist_r 
-, loc_2_c = case when bc <= ac then bc  - currN*dist_c
-                 else bc + currN*dist_c
-            end
+, loc_2_r = br - currN * dist_r 
+, loc_2_c = bc - currN * dist_c
+
 from cte cross apply (select currN = n+1) iter
-where n < (select iterLimit from maxIter)
+where n <= (select iterLimit from maxIter)
 )
 select * into #calc_location_Q2   from cte 
 option (maxrecursion 0)
-
 
 
 
@@ -216,8 +205,8 @@ ch
 into #valid_loc_q2
 from #calc_location_Q2
     cross apply (
-                 select max_c = max(c)
-                        , max_r = max(r)
+                 select max_r = max(r) 
+                        , max_c = max(c)
                  from #base
                  ) bound
 where 
@@ -232,8 +221,8 @@ ch
 , loc_2_c
 from #calc_location_Q2
     cross apply (
-                 select max_c = max(c)
-                        ,max_r = max(r)
+                 select max_r = max(r) 
+                        , max_c = max(c)
                  from #base
                  ) bound
 where 
@@ -241,6 +230,8 @@ loc_2_r between 1 and bound.max_r
 and loc_2_c between 1 and bound.max_c
 
 
+
+ 
 -- to find antennas location, except for those appears only once
 -- for the ones appear only once, the location is still valid, if it happes to be antinode, which is calculated above
 
@@ -252,15 +243,21 @@ from #base
 where ch != '.'
 except 
 select r, c from #base 
-where ch in (select ch from #base where ch != '.' group by ch having count(*) = 1)
+where ascii(ch) in (select ascii(ch) from #base where ch != '.' group by ascii(ch) having count(*) = 1)
 
+-- select * from #valid_antennas
 
--- 923 , too low
+--  927 
 select 
-ans = count(distinct concat(r, ',', c))
+ans = count(distinct concat('(', c, ',', r, ')'))
 from 
-(select r, c from #valid_antennas
-union 
-select loc_r, loc_c from #valid_loc_q2
+(
+    select r, c from #valid_antennas
+    union 
+    select loc_r, loc_c from #valid_loc_q2
 ) _
+ 
+
+
+
  
