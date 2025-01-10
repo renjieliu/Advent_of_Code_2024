@@ -136,14 +136,25 @@ from #valid_loc
 
 drop table if exists #calc_location_Q2
 
-; 
-with maxIter as -- total iteration should not be the max( total_r, total_c ) of the input
-(select iterLimit = iif (max(r) >= max(c),  max(r), max(c)) from #base) 
+drop table if exists #iter 
+
+;
+with bound as  
+( select E = iif( max(r) >= max(c), max(r), max(c)) 
+  from #base 
+)
 , cte as 
-(
+(select n = 1 
+union all 
+select n + 1 from cte, bound 
+where n < E
+)
+
+select * into #iter from cte
+OPTION (maxrecursion 0)
+
 select 
-n = 1
-, a.ch
+a.ch
 , a_pos = a.pos 
 , b_pos = b.pos
 , ar = a.r
@@ -153,46 +164,84 @@ n = 1
 
 , dist.dist_r 
 , dist.dist_c
-, loc_1_r = a.r + dist.dist_r
-, loc_1_c = a.c + dist.dist_c
+, loc_1_r = a.r + it.n*dist.dist_r
+, loc_1_c = a.c + it.n*dist.dist_c
 
-, loc_2_r = b.r - dist.dist_r 
-, loc_2_c = b.c - dist.dist_c
-
+, loc_2_r = b.r - it.n*dist.dist_r 
+, loc_2_c = b.c - it.n*dist.dist_c
+into #calc_location_Q2 
 from #base a 
 inner join #base b
 on ascii(a.ch) = ascii(b.ch) -- SQL server is case insensitive
 and a.ch != '.' 
 and a.pos < b.pos -- to avoid double finding
+cross join (select distinct n from #iter) it -- the iteration times
+-- cross join (select c from #base) sc
 cross apply 
-    (select dist_r = a.r - b.r  , dist_c = a.c-b.c   ) dist
+    (select dist_r = a.r - b.r  , dist_c = a.c-b.c ) dist
 
-union all 
 
-select 
-n + 1
-, ch 
-, a_pos
-, b_pos
-, ar 
-, ac 
-, br 
-, bc 
 
-, dist_r 
-, dist_c
 
-, loc_1_r = ar + currN * dist_r
-, loc_1_c = ac + currN * dist_c
 
-, loc_2_r = br - currN * dist_r 
-, loc_2_c = bc - currN * dist_c
+--- Approach with recursive CTE
+-- ; 
+-- with maxIter as -- total iteration should not be the max( total_r, total_c ) of the input
+-- (select iterLimit = iif (max(r) >= max(c),  max(r), max(c)) from #base) 
+-- , cte as 
+-- (
+-- select 
+-- n = 1
+-- , a.ch
+-- , a_pos = a.pos 
+-- , b_pos = b.pos
+-- , ar = a.r
+-- , ac = a.c 
+-- , br = b.r
+-- , bc = b.c
 
-from cte cross apply (select currN = n+1) iter
-where n <= (select iterLimit from maxIter)
-)
-select * into #calc_location_Q2   from cte 
-option (maxrecursion 0)
+-- , dist.dist_r 
+-- , dist.dist_c
+-- , loc_1_r = a.r + dist.dist_r
+-- , loc_1_c = a.c + dist.dist_c
+
+-- , loc_2_r = b.r - dist.dist_r 
+-- , loc_2_c = b.c - dist.dist_c
+
+-- from #base a 
+-- inner join #base b
+-- on ascii(a.ch) = ascii(b.ch) -- SQL server is case insensitive
+-- and a.ch != '.' 
+-- and a.pos < b.pos -- to avoid double finding
+-- cross apply 
+--     (select dist_r = a.r - b.r  , dist_c = a.c-b.c   ) dist
+
+-- union all 
+
+-- select 
+-- n + 1
+-- , ch 
+-- , a_pos
+-- , b_pos
+-- , ar 
+-- , ac 
+-- , br 
+-- , bc 
+
+-- , dist_r 
+-- , dist_c
+
+-- , loc_1_r = ar + currN * dist_r
+-- , loc_1_c = ac + currN * dist_c
+
+-- , loc_2_r = br - currN * dist_r 
+-- , loc_2_c = bc - currN * dist_c
+
+-- from cte cross apply (select currN = n+1) iter
+-- where n <= (select iterLimit from maxIter)
+-- )
+-- select * into #calc_location_Q2   from cte 
+-- option (maxrecursion 0)
 
 
 
