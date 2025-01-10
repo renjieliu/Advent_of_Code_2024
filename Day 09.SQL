@@ -18,7 +18,8 @@ select col = '479993581374173438839671827288436875348910911687689616519593689142
 drop table if exists #base 
 
 ; with iter as 
-(select pos = 1 
+(
+select pos = 1 
 union all
 select 
 pos + 1 
@@ -109,33 +110,97 @@ where dot_pos <= (select count(*) from #t_flat) -- total characters
                  - 
                  (select count(*) from #t_dot_loc_id) -- total dots
 
-)
-,  cte as
+), swap_loc as 
 (
 select 
-step = 0 
-, wk_str = coded
-from #t_coded 
-union all 
-select 
-step + 1 
-, move_dot_to_end.B
-from cte 
-inner join #t_dot_loc_id dot on dot.dot_loc_id = step + 1 
-inner join #t_ch_loc_id_from_end ch on dot.dot_loc_id = ch.ch_loc_id -- the first gap needs to be replaced with the last ch,  second need to be replaced with the second to last ch, etc
-cross apply (
-              select A = STUFF(wk_str, dot.dot_pos,1,  ( select SUBSTRING(coded,ch.ch_pos, 1) from #t_coded ) )
-            ) move_ch_front
-cross apply (
-              select B = STUFF(A, ch.ch_pos, 1 , '.'  )
-            ) move_dot_to_end
-where step < (select dots_to_swap from dots_cnt)
+dot_pos
+, ch_pos
+ from
+#t_dot_loc_id dot
+ left outer join #t_ch_loc_id_from_end ch
+on dot.dot_loc_id = ch.ch_loc_id
+cross join dots_cnt 
+where dot.dot_loc_id <= dots_to_swap 
 )
-select * 
-into #compressed 
-from cte
-where step = (select dots_to_swap from  dots_cnt )
-OPTION (maxrecursion 0 )
+, stg as
+(
+select 
+flat.*
+, new_ch = isnull(to_be.curr, flat.curr) from 
+#t_flat flat 
+left outer join swap_loc dot 
+on flat.pos = dot.dot_pos
+left outer join #t_flat to_be 
+on to_be.pos = dot.ch_pos
+) 
+select 
+* -- wk_str = STRING_AGG(new_ch, '') within group(order by pos)
+into #compressed
+from stg
+where pos <= 
+(
+select cnt1 - cnt2
+from 
+(
+    select
+     cnt1 =  (select count(*) from #t_flat) -- total characters
+     , 
+     cnt2 = (select count(*) from #t_dot_loc_id) -- total dots
+) t 
+)
+
+-- 91486187825 -- your answer is too low
+select res = sum( cast( new_ch * (pos -1) as bigint ) ) from #compressed
+ 
+
+
+
+-- ; with cte as (
+-- select wk_str = REPLACE(wk_str, '.', '') 
+-- from #compressed
+-- )
+-- , iter as 
+-- (
+--      select id = 0, curr = cast('' as varchar(max))
+--      union all
+--      select id +1, ch
+--      from iter 
+--      cross apply (select ch = SUBSTRING(cte.wk_str, id + 1, 1 ) from cte ) _
+--      where id < (select len(wk_Str) from cte)
+-- )
+-- select 
+-- * -- SUBSTRING(cte.wk_str, id, 1 )
+-- from iter-- , cte
+-- option (maxrecursion 0 )
+
+
+
+-- ,  cte as
+-- (
+-- select 
+-- step = 0 
+-- , wk_str = coded
+-- from #t_coded 
+-- union all 
+-- select 
+-- step + 1 
+-- , move_dot_to_end.B
+-- from cte 
+-- inner join #t_dot_loc_id dot on dot.dot_loc_id = step + 1 
+-- inner join #t_ch_loc_id_from_end ch on dot.dot_loc_id = ch.ch_loc_id -- the first gap needs to be replaced with the last ch,  second need to be replaced with the second to last ch, etc
+-- cross apply (
+--               select A = STUFF(wk_str, dot.dot_pos,1,  ( select SUBSTRING(coded,ch.ch_pos, 1) from #t_coded ) )
+--             ) move_ch_front
+-- cross apply (
+--               select B = STUFF(A, ch.ch_pos, 1 , '.'  )
+--             ) move_dot_to_end
+-- where step < (select dots_to_swap from dots_cnt)
+-- )
+-- select * 
+-- into #compressed 
+-- from cte
+-- where step = (select dots_to_swap from  dots_cnt )
+-- OPTION (maxrecursion 0 )
  
 
 
@@ -152,5 +217,8 @@ from #compressed
 )
 select 
 sum( (id-1) * cast( SUBSTRING(cte.wk_str, id, 1 ) as int) ) 
- from iter, cte
+from iter, cte
+
+
+
 
