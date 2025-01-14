@@ -131,7 +131,7 @@ select res = sum( (rn-1) * final_content) from cte
 
 
 
----------------Q2 -- TBD
+---------------Q2 -- TODO - need to figure out a way to move the numbers to replace the dots
 
 -- Idea - Does not work, replace the dot in-place is not enough, need to swap the dot to the number position
 
