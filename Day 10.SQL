@@ -89,11 +89,13 @@ where total = 10
 option (maxrecursion 0)
 
 
-
+-- Q1
 select res = count(*) 
 from 
 ( select distinct zero_loc , nine_loc  from #full_path) _
 
+
+-- Q2 
 select res = count(*) from #full_path
 
 
