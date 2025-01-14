@@ -67,20 +67,58 @@ from cte
     outer apply (select calc = curr * 2024 where total_length %2 != 0 and curr != 0 ) others 
 where iter < 25
 )
-select * from cte 
+select res = count(*) from cte 
 where iter = 25
 order by 1 
 OPTION(maxrecursion 0 )
 
 
 
----- Q2
+---- Q2 -- TBD 
 
 -- same question, but need to iteration 75 times. 
 -- above approach no longer works for 75 times, it will be too many rows.
 
+-- have a dp table, to store the (stone_number, step, cnt) 
+-- for each iteration, look back the previous step
+
+-- TODO - SQL does not allow aggregation in the recursive part
+-- get the total count of the previous, 
+-- group by stone_number, step-1
 
 
+-- select * from #base 
 
+;with cte as 
+(
+    select 
+        step = 0 
+        , stone = curr
+        , cnt = 1 
+    from #base
+    
+    union all 
+    select 
+    step + 1
+    , stone = case when stone = 0 then opt1.nxt_stone
+                   when ln.total_length % 2 = 0 then opt2.nxt_stone
+                   else opt3.nxt_stone
+              end 
+    , cnt 
+    from  cte 
+    outer apply (select nxt_stone = 1 where stone = 0) opt1 
+    outer apply (select str_stone = cast(stone as varchar(max))) str_stone
+    outer apply (select total_length = len(str_stone) ) ln
+    outer apply (select nxt_stone = cast ( left(str_stone, total_length/2) as bigint) where total_length % 2 = 0 
+                 union all
+                 select nxt_stone = cast (right(str_stone, total_length/2)as bigint) where total_length % 2 = 0  
+                ) opt2  
+
+    outer apply (select nxt_stone = stone * 1024 where stone != 0 and len(str_stone) % 2 != 0) opt3
+
+    where step < 5
+)
+select * from cte
+OPTION(maxrecursion 0)
 
 
