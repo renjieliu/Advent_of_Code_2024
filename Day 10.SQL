@@ -11,7 +11,10 @@ select id = '1' , col = '1877656901434678343032100901234567654308987676501210184
 
 --Q1 Idea
 -- using recursive CTE to mimic DFS, to go find the path from 0 to 9
--- find all the 9 location, to see if the 0 location can reach that 
+-- find all the 9 location, to see if the 0 location can reach that - total steps from 0 to be 10
+
+-- Q2 Idea 
+-- Get the distinct total path with turning direction
 
 -- select * from #input
 
