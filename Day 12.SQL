@@ -1,3 +1,5 @@
+-- 1450816
+-- 865662
 drop table if exists #input 
 
 -- select id = '1' , col = 'AAAA' into #input  union all select id = '2' , col = 'BBCD' union all select id = '3' , col = 'BBCC' union all select id = '4' , col = 'EEEC' 
