@@ -89,6 +89,7 @@ OPTION(maxrecursion 0 )
 
 -- select * from #base 
 
+
 ;with cte as 
 (
     select 
