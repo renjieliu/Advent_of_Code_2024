@@ -87,6 +87,10 @@ OPTION(maxrecursion 0 )
 -- group by stone_number, step-1
 
 
+-- get the DP table from the previous iteration
+-- merge , and start current iteration
+-- perhaps need to take a look at SQL json syntax , for faster merge, and update
+
 drop table if exists #stones
 
 select 
