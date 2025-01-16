@@ -20,7 +20,12 @@ select id = '1' , col = 'CCCCCCCCCCKKKKKKKKDKQQQQQQQQFFRFFFFEEEEEEEEEEEEEEEEUUUU
 -- check if it's the first row for the character 
 -- check if it's the last row for the character 
 -- combine the rows, to find the island -- the island is like rows stacked onto another 
-
+-- combine islands connected with different roots. The code will find AAA on the left side, and on the right side as 2 recursive roots
+----------------
+-- AAAA 
+---AACCBBBBBAAAAA
+---AAAAAAAAAAAAAAA
+----------------
 -- give each island an id, and find all the (r, c) in the same island 
 -- for each character, it will have perimeter = 4. Once find there's a same character on the left, right, up, down, then -1 for each
 
@@ -53,13 +58,6 @@ pos = cast(mc*(r-1) + c as varchar(100))
 from cte, (select mc = max(c) from cte) _
 OPTION(maxrecursion 0)
 
-
--- create index idx_r on #base(r)
--- create index idx_c on #base(c)
-
-
--- select * from #base  
--- order by cast(pos as int)
 
 drop table if exists #island_row
 
