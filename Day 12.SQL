@@ -1,5 +1,3 @@
--- 1450816
--- 865662
 drop table if exists #input 
 
 -- select id = '1' , col = 'AAAA' into #input  union all select id = '2' , col = 'BBCD' union all select id = '3' , col = 'BBCC' union all select id = '4' , col = 'EEEC' 
@@ -184,6 +182,7 @@ into #island_perimeter
 from cte 
 
 
+-- 1450816
 select res = sum(size* p )
 from (
     select
@@ -275,7 +274,7 @@ from #line_start_stg
 -- select * from #line_start
 -- order by root_segment, r, c 
 
-
+-- 865662
 select res = sum(sides * sizes) 
 from (
     select 
