@@ -123,7 +123,7 @@ on pair.ch_rn = ch.rn
 select * from #swapped
 where rn <= (select count(*) from #decode) -- total number of rows
               - 
-           (select count(*) from #decode where content = -1 ) -- total -1
+            (select count(*) from #decode where content = -1 ) -- total -1
 ) 
 select res = sum( (rn-1) * final_content) from cte
 
@@ -139,6 +139,16 @@ select res = sum( (rn-1) * final_content) from cte
 -- replace the numbers from right, with the position of the number
 -- break the compact string, and replace the positions of the original number
 -- calculate the final result
+
+
+
+-- 00...111...2...333.44.5555.6666.777.888899
+-- 0099.111...2...333.44.5555.6666.777.8888..
+-- 0099.1117772...333.44.5555.6666.....8888..
+-- 0099.111777244.333....5555.6666.....8888..
+-- 00992111777.44.333....5555.6666.....8888..
+
+
 
 
 -- select * from #base
