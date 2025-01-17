@@ -1,8 +1,10 @@
+rollback
+
 drop table if exists #input
 
 -- select col = '125 17' into #input
--- select col = '0 7 198844 5687836 58 2478 25475 894' into #input
-select col = '0' into #input
+select col = '0 7 198844 5687836 58 2478 25475 894' into #input
+-- select col = '0' into #input
 
 
 -- idea: for each number, follow the rules to transform.
@@ -35,7 +37,7 @@ where DATALENGTH(rem) > 1
 select * into #base from cte 
 
 
-
+ 
 ; with cte as 
 (
 select  
@@ -65,13 +67,15 @@ from cte
                 where total_length %2 = 0 -- second part 
                 )  split
     outer apply (select calc = curr * 2024 where total_length %2 != 0 and curr != 0 ) others 
-where iter < 5 -- 25
+where iter < 25 -- 25
 )
-select res = count(*) from cte 
-where iter = 5 -- 25
+select res = count(*) from cte  -- 216996
+where iter = 25 -- 25
 order by 1 
 OPTION(maxrecursion 0 )
 
+
+ 
 
 
 ---- Q2 -- TBD 
@@ -88,11 +92,138 @@ OPTION(maxrecursion 0 )
 -- in the function, have a script to break the k-v pair
 -- break current iteration, and merge with the k-v pair
 -- return the result as a string to the main caller , and go to the next iteration
+go 
+
+
+--stones string like - stone.count|
+create function f_dp_count(@stones varchar(max))
+returns table as return 
+with base as
+(select 
+ stones = @stones + '|'
+)
+, cte as 
+(select 
+id = 1
+, stone = left(stones, CHARINDEX('|', stones)-1)
+, rem = right(stones, len(stones) - CHARINDEX('|', stones) )
+from base
+
+union all 
+
+select 
+id + 1 
+, stone = left(rem, CHARINDEX('|', rem)-1)
+, rem = right(rem, len(rem) - CHARINDEX('|', rem))
+from cte
+where len(rem) > 1
+) 
+, prev_stone_cnt as 
+(
+    select 
+    stone = cast(PARSENAME(stone, 2) as bigint)
+     , prev_cnt = cast(PARSENAME(stone, 1) as bigint)
+    from cte 
+)
+, prev_stone_after_blink as 
+(
+  select 
+    stone = conso.nxt_stone
+    , after_blink_cnt = count(*)*prev_cnt 
+  from 
+  prev_stone_cnt
+    outer apply (select nxt_stone = 1 where stone = 0) zero
+    outer apply (select total_length = len(cast(stone as varchar(max))) ) tl
+    outer apply (select nxt_stone = cast( left(stone, total_length / 2 ) as bigint)  
+                 where total_length % 2 = 0  -- first part
+                    union all 
+                select nxt_stone = right(stone, total_length / 2)  
+                where total_length %2 = 0 -- second part 
+                )  split
+    outer apply (select nxt_stone = stone * 2024 where total_length %2 != 0 and stone != 0 ) others 
+    cross apply (select nxt_stone = case when stone = 0 then zero.nxt_stone
+                                         when tl.total_length % 2 = 0 then split.nxt_Stone
+                                         else others.nxt_stone 
+                                    end ) conso
+    group by prev_cnt, conso.nxt_stone 
+), curr_stone_cnt as 
+(
+    select stone, curr_cnt = sum(after_blink_cnt)  
+    from prev_stone_after_blink
+    group by stone
+)
+select 
+stones = STRING_AGG( cast(stone as varchar(max)) + '.' + cast(curr_cnt as varchar(max)), '|') 
+from curr_stone_cnt
 
 
 
 
+ 
+go
 
+
+-- select * from #base
+
+-- select 
+--   stones = string_agg( cast(curr as varchar(max))+'.1', '|') within group ( order by curr)
+--    from #base
+
+
+-- select * from f_dp_count('1.1|4048.2|8096.1')
+
+
+drop table if exists #iteration
+
+; with cte as 
+(
+    select 
+    step = 0
+    , stones = string_agg( cast(curr as varchar(max))+'.1', '|') within group ( order by curr)
+    from #base
+    union all 
+    select 
+    step+ 1
+    , stones = dp.stones
+    from cte cross apply f_dp_count(stones) dp
+    where step < 75
+)
+select *
+into #iteration 
+from cte
+option (maxrecursion 0)
+
+
+-- select * from #iteration
+
+-- 
+
+-- 257335372288947
+
+; with base as 
+(
+    select stones= stones + '|' from #iteration
+    where step = 75
+)
+, cte as 
+(
+select 
+id = 1
+, stone = left(stones, CHARINDEX('|', stones)-1)
+, rem = right(stones, len(stones) - CHARINDEX('|', stones) )
+from  base  
+
+union all 
+
+select 
+id + 1 
+, stone = left(rem, CHARINDEX('|', rem)-1)
+, rem = right(rem, len(rem) - CHARINDEX('|', rem))
+from cte
+where len(rem) > 1
+)
+select res = sum(cast ( PARSENAME(stone, 1) as bigint )) from cte 
+option (maxrecursion 0)
 
 
 
@@ -212,3 +343,26 @@ OPTION(maxrecursion 0 )
 -- OPTION(maxrecursion 0)
 
 
+;
+
+
+-- with base as
+-- (select 
+--  stones = '17.1|125.1' + '|'
+-- )
+-- , cte as 
+-- (select 
+-- id = 1
+-- , stone = left(stones, CHARINDEX('|', stones)-1)
+-- , rem = right(stones, len(stones) - CHARINDEX('|', stones) )
+-- from base
+
+-- union all 
+
+-- select 
+-- id + 1 
+-- , stone = left(rem, CHARINDEX('|', rem)-1)
+-- , rem = right(rem, len(rem) - CHARINDEX('|', rem))
+-- from cte
+-- where len(rem) > 1
+-- ) select * from cte 
