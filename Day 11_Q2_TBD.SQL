@@ -83,77 +83,91 @@ OPTION(maxrecursion 0 )
 -- for each iteration, look back the previous step
 
 -- TODO - SQL does not allow aggregation in the recursive part
--- get the total count of the previous, 
--- group by stone_number, step-1
-
-
--- get the DP table from the previous iteration
--- merge , and start current iteration
--- perhaps need to take a look at SQL json syntax , for faster merge, and update
-
-drop table if exists #stones
-
-select 
-id 
-, stone = cast(curr as varchar(max)) 
-into #stones
-from #base
+-- to do the aggregation in a function, and use cross apply to get the result from the function.
+-- the function needs to take in a string. with key1:count, key2:count 
+-- in the function, have a script to break the k-v pair
+-- break current iteration, and merge with the k-v pair
+-- return the result as a string to the main caller , and go to the next iteration
 
 
 
-; with cte as
-(
-select
-iter = 0
-, stone  
-, dp = cast( concat('(', stone, ',', 0, '):1|' ) as varchar(max))
- from #stones
-union all 
 
-select 
-iter + 1
-, stone = cast(conso.nxtstone as varchar(max))
-, dp = cast (nxt_dp.dp as varchar(max)) -- cast(acc.cnt as varchar(max)) -- cast (nxt_dp.dp as varchar(max))
-from cte 
-    outer apply (select nxtstone = 1 where stone = 0 ) zero 
-    outer apply (select nxtstone = left(stone, len(stone)/2) where len(stone) % 2 = 0
-                    union all 
-                 select nxtstone = right(stone, len(stone)/2) where len(stone) % 2 = 0
-                ) even
-    outer apply (select nxtstone = cast(stone as bigint) * 2024 where stone != 0 and len(stone)%2!=0) other
-    cross apply (
-                select nxtstone = case when stone = 0 then zero.nxtstone
-                                    when len(stone) % 2 = 0 then even.nxtstone
-                                    when stone != 0 and len(stone) % 2 != 0 then other.nxtstone
-                                  end 
-                ) conso
-    cross apply ( select k = concat('(', conso.nxtstone, ',', iter, '):' )
-                        , nxt_key = concat('(', conso.nxtstone, ',', iter+1, '):' ) ) dp_key
-    cross apply ( select startloc = CHARINDEX(k, dp)
-                        , endloc =  CHARINDEX('|', dp,  CHARINDEX(k,dp))
-                ) _loc -- this is the range to be updated
-    cross apply ( select cnt = case when startloc = 0 then 1  -- first time, counting 1
-                                    else 
-                                    1 + cast( 
-                                        substring(dp    
-                                                 , CHARINDEX(':', dp, startloc) + 1 
-                                                 , CHARINDEX('|', dp, startloc) - CHARINDEX(':', dp, startloc)-1
-                                                 ) 
-                                         as bigint) -- extracing the previous count. key:value are (stone, step):count |
-                                end ) acc
-    cross apply ( select dp = case when CHARINDEX(k, dp) = 0 then dp + nxt_key + cast(cnt as varchar(100)) +  '|' 
-                                   else left(dp,CHARINDEX(k, dp)-1)
-                                            + 
-                                        nxt_key + cast(cnt as varchar) + '|'
-                                            + 
-                                        right(dp, len(dp) - endloc  )
-                             end
-                             ) nxt_dp
 
-where iter < 10
-)
-select * from cte
-order by 1 
+
+
+
+------ Below code does not work ------------
+
+
+
+
+
+
+
+
+-- drop table if exists #stones
+
+-- select 
+-- id   
+-- , stone = cast(curr as varchar(max)) 
+-- into #stones
+-- from #base
+
+
+
+-- ; with cte as
+-- (
+-- select
+-- iter = 0
+-- , stone  
+-- , dp = cast( concat('(', stone, ',', 0, '):1|' ) as varchar(max))
+--  from #stones
+-- union all 
+
+-- select 
+-- iter + 1
+-- , stone = cast(conso.nxtstone as varchar(max))
+-- , dp = cast (nxt_dp.dp as varchar(max)) -- cast(acc.cnt as varchar(max)) -- cast (nxt_dp.dp as varchar(max))
+-- from cte 
+--     outer apply (select nxtstone = 1 where stone = 0 ) zero 
+--     outer apply (select nxtstone = left(stone, len(stone)/2) where len(stone) % 2 = 0
+--                     union all 
+--                  select nxtstone = right(stone, len(stone)/2) where len(stone) % 2 = 0
+--                 ) even
+--     outer apply (select nxtstone = cast(stone as bigint) * 2024 where stone != 0 and len(stone)%2!=0) other
+--     cross apply (
+--                 select nxtstone = case when stone = 0 then zero.nxtstone
+--                                     when len(stone) % 2 = 0 then even.nxtstone
+--                                     when stone != 0 and len(stone) % 2 != 0 then other.nxtstone
+--                                   end 
+--                 ) conso
+--     cross apply ( select k = concat('(', conso.nxtstone, ',', iter, '):' )
+--                         , nxt_key = concat('(', conso.nxtstone, ',', iter+1, '):' ) ) dp_key
+--     cross apply ( select startloc = CHARINDEX(k, dp)
+--                         , endloc =  CHARINDEX('|', dp,  CHARINDEX(k,dp))
+--                 ) _loc -- this is the range to be updated
+--     cross apply ( select cnt = case when startloc = 0 then 1  -- first time, counting 1
+--                                     else 
+--                                     1 + cast( 
+--                                         substring(dp    
+--                                                  , CHARINDEX(':', dp, startloc) + 1 
+--                                                  , CHARINDEX('|', dp, startloc) - CHARINDEX(':', dp, startloc)-1
+--                                                  ) 
+--                                          as bigint) -- extracing the previous count. key:value are (stone, step):count |
+--                                 end ) acc
+--     cross apply ( select dp = case when CHARINDEX(k, dp) = 0 then dp + nxt_key + cast(cnt as varchar(100)) +  '|' 
+--                                    else left(dp,CHARINDEX(k, dp)-1)
+--                                             + 
+--                                         nxt_key + cast(cnt as varchar) + '|'
+--                                             + 
+--                                         right(dp, len(dp) - endloc  )
+--                              end
+--                              ) nxt_dp
+
+-- where iter < 10
+-- )
+-- select * from cte
+-- order by 1 
 
 
 
