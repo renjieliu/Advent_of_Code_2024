@@ -106,6 +106,7 @@ from #lowest_costs
 
 ------ Q2, since the prize location is far away from the starting point, dp approach does not work 
 -- In essence, this is just to solve the formula for a and b
+-- Well, the same approach can be applied to Q1 as well. 
 
 ---A*Ax + B*Bx = c
 -- A*Ay + B*By = d 
