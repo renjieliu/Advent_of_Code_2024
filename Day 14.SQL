@@ -80,7 +80,7 @@ select res =(select cnt from cte where end_quad = 1)
 -- Part 2 
 -- Idea is to find the largest island after each move
 
-select * from #base
+-- select * from #base
 
 drop table if exists #moves
 
@@ -88,7 +88,7 @@ drop table if exists #moves
 (select m = 1 
 union all 
 select m + 1 from moves_iter 
-where m < 100
+where m < 10000
 )
 select
 step = m
@@ -116,6 +116,33 @@ from #base base cross join moves_iter
 OPTION (maxrecursion 0)
 
 
+-- to check how many of them can find more than one neighbour
 
-select * from #moves 
-where step = 1
+drop table if exists #cluster 
+
+select a.step, a.id, cnt = count(distinct b.id)
+into #cluster 
+from #moves a
+left outer join #moves b
+on a.step = b.step
+and 
+(   (abs(a.endLoc_x - b.endLoc_x) =1 and a.endLoc_y = b.endLoc_y)
+    or 
+    (abs(a.endLoc_y - b.endLoc_y) =1 and a.endLoc_x = b.endLoc_x)
+)
+group by a.step, a.id
+--having count(distinct b.id) > 2
+
+
+select 
+step
+, pct_point_with_neighbour = sum(cnt)*100.0 / count(id)
+from #cluster
+group by step 
+order by 2 desc
+
+
+
+
+
+
