@@ -74,11 +74,48 @@ select res =(select cnt from cte where end_quad = 1)
             *
             (select cnt from cte where end_quad = 4)
 
- 
-
 
 
 
 -- Part 2 
 -- Idea is to find the largest island after each move
 
+select * from #base
+
+drop table if exists #moves
+
+; with moves_iter as 
+(select m = 1 
+union all 
+select m + 1 from moves_iter 
+where m < 100
+)
+select
+step = m
+, base.*
+, endLoc_x = end_x
+, endLoc_y = end_y
+, end_quad = case when end_x < (wide-1)/2 and end_y < (tall-1) / 2 then 1  -- robots on the quadrant line won't count
+                  when end_x > (wide-1)/2 and end_y < (tall-1) / 2 then 2 
+                  when end_x < (wide-1)/2 and end_y > (tall-1) / 2 then 3
+                  when end_x > (wide-1)/2 and end_y > (tall-1) / 2 then 4 
+             end  
+into #moves
+from #base base cross join moves_iter
+    cross apply (select moves = m, wide = 101, tall = 103) _map
+    cross apply (select moved_x = (p1 + v1*moves), moved_y = p2 + v2*moves ) _moved_to
+    cross apply (select end_x = case when v1 >= 0 or moved_x > 0 
+                                     then moved_x % wide 
+                                    else ( moved_x % wide + wide ) % wide 
+                                end  
+                        , end_y = case when v2 >= 0 or moved_y > 0 
+                                       then moved_y % tall 
+                                       else (moved_y % tall + tall) % tall 
+                                  end 
+                ) _end
+OPTION (maxrecursion 0)
+
+
+
+select * from #moves 
+where step = 1
