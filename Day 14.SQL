@@ -59,7 +59,7 @@ from #base base
 -- exp(ln(x*y*z)) = x*y*z -- but this approach will result in decimals
 
 
--- 100066560, too low
+ -- 228457125
 ; with cte as (
 select end_quad,  cnt = count(*)
 from #after_move
@@ -78,9 +78,11 @@ select res =(select cnt from cte where end_quad = 1)
 
 
 -- Part 2 
--- Idea is to find the largest island after each move
+--Idea: 
+-- option 1 - Most of them will stick together,  to check how many of them can find at least one neighbour
+-- option 2 - Since a lot of the points will be sticked together to form a tree, it should have the minimal safety score
 
--- select * from #base
+
 
 drop table if exists #moves
 
@@ -116,7 +118,8 @@ from #base base cross join moves_iter
 OPTION (maxrecursion 0)
 
 
--- to check how many of them can find more than one neighbour
+
+
 
 drop table if exists #cluster 
 
@@ -131,15 +134,51 @@ and
     (abs(a.endLoc_y - b.endLoc_y) =1 and a.endLoc_x = b.endLoc_x)
 )
 group by a.step, a.id
---having count(distinct b.id) > 2
 
 
-select 
+
+-- select * from #cluster
+
+select top 1 res = step from 
+( select 
 step
 , pct_point_with_neighbour = sum(cnt)*100.0 / count(id)
 from #cluster
 group by step 
-order by 2 desc
+)_
+order by pct_point_with_neighbour desc
+
+
+
+
+-- option 2 
+
+drop table if exists #moves_cnt 
+
+select step, end_quad,  cnt = count(*)
+into #moves_cnt 
+from #moves
+where end_quad is not null 
+group by step, end_quad
+
+
+create index idx on #moves_cnt(step, end_quad)
+ 
+
+select top 1 res = step from 
+(select 
+step
+, score = (select cnt from #moves_cnt mc2 where end_quad = 1 and mc1.step = mc2.step)
+          *
+          (select cnt from #moves_cnt mc2 where end_quad = 2 and mc1.step = mc2.step)
+          * 
+          (select cnt from #moves_cnt mc2 where end_quad = 3 and mc1.step = mc2.step)
+          * 
+          (select cnt from #moves_cnt mc2 where end_quad = 4 and mc1.step =mc2.step)
+
+from #moves_cnt mc1
+)_
+order by score
 
 
 
