@@ -252,7 +252,27 @@ return select *
 GO
 
 
-declare @Input varchar(max) ='' 
+declare @Input varchar(max) ='##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^' 
 drop table if exists #Maze
 drop table if exists #Moves
 drop table if exists #Final
@@ -273,15 +293,24 @@ where Symbol != '.'
 	and r not in (0, MaxRow + 1)
 	and c not in (0, MaxCol + 1)
 
+select * from #maze 
+
+
 insert into AOC_2024_Day15_Rocks
 select r, c
 from #Maze
 where Symbol = '#'
 
+ select * from AOC_2024_Day15_Rocks 
+
 select c.[value] ord, cast(substring(Moves, c.[value], 1) as char(1)) Dir
 into #Moves
 from (select replace(replace(substring(@Input, charindex(concat(char(13), char(10), char(13), char(10)), @Input, 1) + 4, len(@Input)), char(13), ''), char(10), '') Moves) m
 	cross apply generate_series_RL(cast(1 as int), cast(len(Moves) as int), cast(1 as int)) c
+option (maxrecursion 0)
+
+select * from #moves 
+
 
 create unique clustered index IX_#Moves on #Moves(ord)
 
@@ -289,7 +318,7 @@ create unique clustered index IX_#Moves on #Moves(ord)
 	(select r, c, MaxRow, MaxCol
 		from #Maze
 		where Symbol = '@'
-		)
+		) -- find the initial place of robot 
 	, Starting as
 	(select r, c, Boxes, MaxRow, MaxCol
 		from Rob
@@ -297,7 +326,7 @@ create unique clustered index IX_#Moves on #Moves(ord)
 							from #Maze
 							where Symbol = 'O'
 						) m
-	)
+	) --  select * from starting
 	, rec as
 	(select cast(r as int) r, c, Boxes, MaxRow, MaxCol, 0 Steps, cast(null as char(1)) Dir
 		from Starting
@@ -307,16 +336,20 @@ create unique clustered index IX_#Moves on #Moves(ord)
 			cross apply (select Steps + 1 NewSteps) n
 			inner join #Moves v on ord = NewSteps
 			cross apply fn_AOC_2024_Day15_Move(r, c, Boxes, v.Dir, 1, MaxRow, MaxCol) m
-	)
+	) select * from rec
 select top 1 *
 into #Final
 from rec
 order by Steps desc
 option (maxrecursion 32767)
 
+
+
+
+
 select sum(100*p.r + p.c) Answer1
 from #Final f
-	cross apply string_split_RL(Boxes, ',')
+	cross apply string_split_RL(Boxes, ',',1)
 	cross apply (select cast(parsename([value], 2) as bigint) r, cast(parsename([value], 1) as bigint) c) p
 
 --Part 2
@@ -371,7 +404,7 @@ option (maxrecursion 32767)
 
 select sum(100*p.r + p.c + 1) Answer2
 from #Final2 f
-	cross apply string_split_RL(Boxes, ',')
+	cross apply string_split_RL(Boxes, ',', 1 )
 	cross apply (select cast(parsename([value], 2) as bigint) r, cast(parsename([value], 1) as bigint) c) p
 
 
