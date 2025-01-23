@@ -1,3 +1,7 @@
+
+
+
+
 drop table if exists #input_map 
 drop table if exists #input_moves
 
@@ -79,23 +83,3 @@ select id = 1
 
 go
 
-
-
--- create function generate_series(@start int, @end int, @step int = 1) 
--- returns table
--- as return 
--- with cte as 
--- (select n = @start
--- union all 
--- select n+@step from cte 
--- where n < @end and n+@step <= @end
--- )
--- select * from cte 
- 
-
-go
-
-
--- select * from generate_series(1, 10, 1)
-
- 
