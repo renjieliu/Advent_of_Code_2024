@@ -13,23 +13,24 @@ create or alter function fn_AOC_2024_Day15_Move(@r int,
 as
 return with Boxes as
 			(select p.*
-				from string_split(@Boxes, ',')
-					cross apply (select cast(parsename([value], 2) as int) r, cast(parsename([value], 1) as int) c) p
+				from string_split(@Boxes, ',') -- all the box locations, concat into a string
+					cross apply 
+					(select cast(parsename([value], 2) as int) r, cast(parsename([value], 1) as int) c) p -- get r and c 
 			)
-			, i1 as
+			, i1 as -- to find the next one on the four directions
 			(select *
-					, lag(c, 1, -1) over(partition by r order by c) NextWest
-					, lead(c, 1, 9999) over(partition by r order by c) NextEast
-					, lag(r, 1, -1) over(partition by c order by r) NextNorth
-					, lead(r, 1, 9999) over(partition by c order by r) NextSouth
+					, lag(c, 1, -1) over(partition by r order by c) NextWest  
+					, lead(c, 1, 9999) over(partition by r order by c) NextEast  
+					, lag(r, 1, -1) over(partition by c order by r) NextNorth 
+					, lead(r, 1, 9999) over(partition by c order by r) NextSouth 
 				from Boxes
 			)
 			, i2 as
 			(select r, c
-					, isnull(max(WestEnd) over(partition by r order by c), 1) WestEnd
-					, isnull(min(EastEnd) over(partition by r order by c desc), @MaxCol) EastEnd
-					, isnull(max(NorthEnd) over(partition by c order by r), 1) NorthEnd
-					, isnull(min(SouthEnd) over(partition by c order by r desc), @MaxRow) SouthEnd
+					, isnull(max(WestEnd) over(partition by r order by c), 1) WestEnd -- Leftend
+					, isnull(min(EastEnd) over(partition by r order by c desc), @MaxCol) EastEnd -- rightEnd
+					, isnull(max(NorthEnd) over(partition by c order by r), 1) NorthEnd --northEnd 
+					, isnull(min(SouthEnd) over(partition by c order by r desc), @MaxRow) SouthEnd -- 
 				from i1
 					cross apply (select iif(NextWest < c - @BoxWidth, c, null) WestEnd
 										, iif(NextEast > c + @BoxWidth, c, null) EastEnd
