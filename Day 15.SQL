@@ -63,10 +63,23 @@ where ch = '@'
 
 go 
 
-create FUNCTION valid_move (
+create FUNCTION f_valid_move (
 
 )
 returns table as return 
 select id = 1 
 
+go 
+
+
+create function f_move()
+returns table as return 
+
+select id = 1
+
 go
+
+
+
+
+ 
