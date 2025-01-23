@@ -28,15 +28,15 @@ return with Boxes as
 					, lead(r, 1, 9999) over(partition by c order by r) NextSouth 
 				from Boxes
 			)
-			, i2 as
+			, i2 as -- last box from current location
 			(select r, c
 					, isnull(max(WestEnd) over(partition by r order by c), 1) WestEnd -- Leftend
 					, isnull(min(EastEnd) over(partition by r order by c desc), @MaxCol) EastEnd -- rightEnd
 					, isnull(max(NorthEnd) over(partition by c order by r), 1) NorthEnd --northEnd 
 					, isnull(min(SouthEnd) over(partition by c order by r desc), @MaxRow) SouthEnd -- 
 				from i1
-					cross apply (select iif(NextWest < c - @BoxWidth, c, null) WestEnd
-										, iif(NextEast > c + @BoxWidth, c, null) EastEnd
+					cross apply (select iif(NextWest < c - 1, c, null) WestEnd
+										, iif(NextEast > c + 1, c, null) EastEnd
 										, iif(NextNorth < r - 1, r, null) NorthEnd
 										, iif(NextSouth > r + 1, r, null) SouthEnd
 								) e
@@ -56,17 +56,17 @@ return with Boxes as
 					left join AOC_2024_Day15_Rocks r on (@Dir = '^' and r.r = NorthEnd - 1 and r.c = b.c)
 													or (@Dir = 'v' and r.r = SouthEnd + 1 and r.c = b.c)
 													or (@Dir = '<' and r.r = b.r and r.c = WestEnd - 1)
-													or (@Dir = '>' and r.r = b.r and r.c = EastEnd + @BoxWidth)
+													or (@Dir = '>' and r.r = b.r and r.c = EastEnd + 1)
 					cross apply(select iif(r.r > 0, 1, 0) Rock
 									, iif((@Dir = '^' and @r = SouthEnd + 1 and @c = b.c)
 												or (@Dir = 'v' and @r = NorthEnd - 1 and @c = b.c)
-												or (@Dir = '<' and @r = b.r and @c = EastEnd + @BoxWidth)
+												or (@Dir = '<' and @r = b.r and @c = EastEnd + 1)
 												or (@Dir = '>' and @r = b.r and @c = WestEnd - 1)
 											, 1, 0) Robot
 									, iif((@Dir = '^' and NorthEnd = 1)
 											or (@Dir = 'v' and SouthEnd = @MaxRow)
 											or (@Dir = '<' and WestEnd = 1)
-											or (@Dir = '>' and EastEnd = @MaxCol - @BoxWidth + 1)
+											or (@Dir = '>' and EastEnd = @MaxCol)
 													, 1, 0) Wall
 								) r1
 					cross apply (select iif(Robot = 1
@@ -301,7 +301,10 @@ select r, c
 from #Maze
 where Symbol = '#'
 
- select * from AOC_2024_Day15_Rocks 
+
+select * from AOC_2024_Day15_Rocks 
+
+
 
 select c.[value] ord, cast(substring(Moves, c.[value], 1) as char(1)) Dir
 into #Moves
