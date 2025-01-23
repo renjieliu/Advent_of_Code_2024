@@ -1,7 +1,10 @@
+
 drop table if exists AOC_2024_Day15_Rocks
 create table AOC_2024_Day15_Rocks(r int, c int )
 create unique clustered index IX_AOC_2024_Day15_Rocks on AOC_2024_Day15_Rocks(r, c)
 GO
+
+
 create or alter function fn_AOC_2024_Day15_Move(@r int,
 												@c int,
 												@Boxes varchar(max),
@@ -13,7 +16,7 @@ create or alter function fn_AOC_2024_Day15_Move(@r int,
 as
 return with Boxes as
 			(select p.*
-				from string_split(@Boxes, ',') -- all the box locations, concat into a string
+				from string_split_RL(@Boxes, ',', 1) -- all the box locations, concat into a string
 					cross apply 
 					(select cast(parsename([value], 2) as int) r, cast(parsename([value], 1) as int) c) p -- get r and c 
 			)
@@ -92,7 +95,12 @@ return with Boxes as
 											or (@Dir = '>' and r.r = @r and r.c = @c + 1)
 			cross apply(select iif(r.r > 0, 1, 0) Rock
 						) r1
+
+
+
 GO
+
+
 
 
 
@@ -107,7 +115,7 @@ create or alter function fn_AOC_2024_Day15_GetAffectedBoxes(@r int,
 as
 return with Boxes as
 		(select p.*
-			from string_split(@Boxes, ',')
+			from string_split_RL(@Boxes, ',', 1)
 				cross apply (select cast(parsename([value], 2) as int) r, cast(parsename([value], 1) as int) c) p
 		)
 		select r, c, 1 Width
@@ -140,6 +148,11 @@ return with Boxes as
 					and c between @c - 1 and @c + @Width
 					)
 GO
+
+
+
+
+
 create or alter function fn_AOC_2024_Day15_GetVerticalMove(@r int,
 															@c int,
 															@Boxes varchar(max),
@@ -185,7 +198,11 @@ return with RoboStart as
 		select r, c, iif(@Dir = '^', -1, 1) rDiff
 		from res
 		where IsBlocked = 0
+
+
 GO
+
+
 create or alter function fn_AOC_2024_Day15_MoveVertical(@r int,
 														@c int,
 														@Boxes varchar(max),
@@ -196,7 +213,7 @@ create or alter function fn_AOC_2024_Day15_MoveVertical(@r int,
 as
 return with Boxes as
 			(select p.*
-				from string_split(@Boxes, ',')
+				from string_split_RL(@Boxes, ',', 1)
 					cross apply (select cast(parsename([value], 2) as int) r, cast(parsename([value], 1) as int) c) p
 			)
 			,
@@ -208,7 +225,12 @@ return with Boxes as
 		from Boxes b
 			full outer join AffectedObjects a on a.r = b.r
 											and a.c = b.c
+
+
 GO
+
+
+
 create or alter function fn_AOC_2024_Day15_Move2(@r int,
 													@c int,
 													@Boxes varchar(max),
@@ -224,7 +246,12 @@ return select *
 		select *
 		from fn_AOC_2024_Day15_MoveVertical(@r, @c, @Boxes, @Dir, @MaxRow, @MaxCol)
 		where @Dir in ('^', 'v')
+
+
+
 GO
+
+
 declare @Input varchar(max) ='' 
 drop table if exists #Maze
 drop table if exists #Moves
@@ -235,8 +262,8 @@ drop table if exists #Final2
 ;with i as
 	(select r.ordinal - 1 r, c.[value] - 1 c, Symbol, max(r.ordinal) over()  - 2 MaxRow, max(c.[value]) over() - 2 MaxCol
 		from (select left(@Input, charindex(concat(char(13), char(10), char(13), char(10)), @Input, 1) - 1) Maze) m
-			cross apply string_split(replace(Maze, char(10), ''), char(13), 1) r
-			cross apply generate_series(cast(1 as int), cast(len(r.[value]) as int), cast(1 as int)) c
+			cross apply string_split_RL(replace(Maze, char(10), ''), char(13), 1) r
+			cross apply generate_series_RL(cast(1 as int), cast(len(r.[value]) as int), cast(1 as int)) c
 			cross apply (select substring(r.[value], c.[value], 1) Symbol) s
 	)
 select *
@@ -254,7 +281,7 @@ where Symbol = '#'
 select c.[value] ord, cast(substring(Moves, c.[value], 1) as char(1)) Dir
 into #Moves
 from (select replace(replace(substring(@Input, charindex(concat(char(13), char(10), char(13), char(10)), @Input, 1) + 4, len(@Input)), char(13), ''), char(10), '') Moves) m
-	cross apply generate_series(cast(1 as int), cast(len(Moves) as int), cast(1 as int)) c
+	cross apply generate_series_RL(cast(1 as int), cast(len(Moves) as int), cast(1 as int)) c
 
 create unique clustered index IX_#Moves on #Moves(ord)
 
@@ -289,15 +316,15 @@ option (maxrecursion 32767)
 
 select sum(100*p.r + p.c) Answer1
 from #Final f
-	cross apply string_split(Boxes, ',')
+	cross apply string_split_RL(Boxes, ',')
 	cross apply (select cast(parsename([value], 2) as bigint) r, cast(parsename([value], 1) as bigint) c) p
 
 --Part 2
 ;with i as
 	(select r.ordinal - 1 r, c.[value] - 2 c, Symbol, max(r.ordinal) over() - 2 MaxRow, max(c.[value]) over() -4 MaxCol
 		from (select replace(replace(replace(replace(left(@Input, charindex(concat(char(13), char(10), char(13), char(10)), @Input, 1) - 1), '#', '##'), 'O', '[]'), '.', '..'), '@', '@.') Maze) m
-			cross apply string_split(replace(Maze, char(10), ''), char(13), 1) r
-			cross apply generate_series(cast(1 as int), cast(len(r.[value]) as int), cast(1 as int)) c
+			cross apply string_split_RL(replace(Maze, char(10), ''), char(13), 1) r
+			cross apply generate_series_RL(cast(1 as int), cast(len(r.[value]) as int), cast(1 as int)) c
 			cross apply (select substring(r.[value], c.[value], 1) Symbol) s
 	)
 select *
@@ -344,5 +371,7 @@ option (maxrecursion 32767)
 
 select sum(100*p.r + p.c + 1) Answer2
 from #Final2 f
-	cross apply string_split(Boxes, ',')
+	cross apply string_split_RL(Boxes, ',')
 	cross apply (select cast(parsename([value], 2) as bigint) r, cast(parsename([value], 1) as bigint) c) p
+
+
