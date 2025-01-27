@@ -15,6 +15,12 @@ select [id] = '1' , [col] = '###################################################
 -- and add current location to the seen string, to avoid loops
 -- based on the direction, turn or move along
 
+-- For larger dataset, using dijkstra's algo
+-- For each point, compute the total score when walk onto the next points
+-- push that result, with (total_score, nxt_r, nxt_c), into a stack
+-- concat the stack as a string, pop the smallest total_scrore, with nxt_r, nxt_c and move onto next iteration
+
+
 drop table if exists #base
 
 select 
