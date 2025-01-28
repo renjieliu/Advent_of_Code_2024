@@ -99,7 +99,7 @@ from cte
 option(maxrecursion 0)
 
 
-
+-- 127520
 select top 1 res = total 
 from #paths 
 where prev = 'E'
