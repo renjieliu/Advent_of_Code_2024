@@ -35,6 +35,7 @@ cross join generate_series_RL(0,(select total from #board),1) B
 left outer join blocks bl on A.value = bl.r and B.[value] = bl.c
 
 
+drop table if exists #paths
 
 
 ; with cte as 
@@ -63,14 +64,15 @@ left outer join blocks bl on A.value = bl.r and B.[value] = bl.c
     cross apply (select total from #board) _
     where nxt.ch = '.' 
     and SUBSTRING(seen, nxt.pos, 1) = '.' -- not seen
-    and step <= (select total * 4 from #board)
-
+    and step <= (select total*2 from #board)
 )
-select * from cte, #board
+select * into #paths from cte, #board
 -- where r = total
 -- and c = total
-order by 1 
+-- order by 1 
 OPTION(maxrecursion 0) -- , fast 1)
 
 
+select * from #paths
+order by r desc, c desc 
 
