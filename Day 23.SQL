@@ -56,7 +56,7 @@ and exists (select * from #base b2 where CONCAT_WS('-', c.pc, b.col2) = b2.A
 
 -- using string_agg to remove duplicates, like x-y-z, y-x-z.. 
 
--- 1218
+-- 1218 
 select res = count(distinct groups) from #group3 
     cross apply (  select groups = STRING_AGG(pc, ',') WITHIN group(order by pc) 
                     from (values (A), (B), (C) ) t(pc)    
