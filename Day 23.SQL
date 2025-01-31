@@ -64,3 +64,12 @@ select res = count(distinct groups) from #group3
 where A like 't%' or B like 't%' or c like 't%'
 
 
+
+
+
+-- part 2 - idea 
+
+
+
+
+
