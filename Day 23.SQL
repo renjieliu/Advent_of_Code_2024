@@ -34,12 +34,12 @@ union
 select pc = col2 
 from #base
 )
-select  CONCAT_WS('-', c.pc, b.col1), * 
+select cnt,  CONCAT_WS('-', c.pc, b.col1), * 
 from #base b inner join cte c on b.col1 != c.pc and b.col2 != c.pc
-where exists 
-(select * from #base b2 where CONCAT_WS('-', c.pc, b2.col1) = b2.B)
+cross apply  
+(select cnt = count(*) from #base b2 where CONCAT_WS('-', c.pc, b2.col1) = b2.B) _
 -- and exists (select * from #base b where CONCAT_WS('-', c.pc, b.col2) = b.A or CONCAT_WS('-', c.pc, b.col2) = b.B)
-order by 1
+order by 2
 
 
 select * from #base where A = 'aq-co' or B = 'aq-co'
