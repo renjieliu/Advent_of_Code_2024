@@ -1,3 +1,5 @@
+-- Part 1 running 16 seconds on Rpi 4
+
 -- Idea 
 -- find all the combinations, and see of that exists in the input 
 
@@ -39,15 +41,22 @@ from #base
 )
 select distinct A = col1
 , B = col2
-, C = pc into #group3
+, C = pc 
+into #group3
 from #base b inner join cte c on b.col1 != c.pc and b.col2 != c.pc
-where exists (select * from #base b2 where CONCAT_WS('-', c.pc, b.col1) = b2.A or CONCAT_WS('-', c.pc, b.col1) = b2.B)
-and exists (select * from #base b2 where CONCAT_WS('-', c.pc, b.col2) = b2.A or CONCAT_WS('-', c.pc, b.col2) = b2.B)
+where exists (select * from #base b2 where CONCAT_WS('-', c.pc, b.col1) = b2.A 
+                union all 
+              select * from #base b2 where CONCAT_WS('-', c.pc, b.col1) = b2.B
+             )
+and exists (select * from #base b2 where CONCAT_WS('-', c.pc, b.col2) = b2.A 
+            union all 
+            select * from #base b2 where  CONCAT_WS('-', c.pc, b.col2) = b2.B
+           )
  
 
 -- using string_agg to remove duplicates, like x-y-z, y-x-z.. 
 
-
+-- 1218
 select res = count(distinct groups) from #group3 
     cross apply (  select groups = STRING_AGG(pc, ',') WITHIN group(order by pc) 
                     from (values (A), (B), (C) ) t(pc)    
