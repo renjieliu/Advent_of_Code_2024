@@ -52,5 +52,21 @@ select count(*) + 1  from #base
 where ch = '.'
 
 
+-- ; with cte as 
+-- (
+-- select 
+-- step = 1 
+-- , r
+-- , c 
+-- , ch
+-- , map = (select map = STRING_AGG(ch, '') within group(order by r, c )from #base)
+-- from #base
+-- where ch = 'S'
+
+-- union all 
+
+-- select 
 
 
+
+-- )
